@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pistributer"
+version = "0.2.0"
+description = "A local-first file-backed FIFO queue with jsonl, txt, and sqlite drivers."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Yeong" }
+]
+urls = { Homepage = "https://github.com/yeongdev/pistributer", Repository = "https://github.com/yeongdev/pistributer", Issues = "https://github.com/yeongdev/pistributer/issues", Changelog = "https://github.com/yeongdev/pistributer/blob/main/CHANGELOG.md" }
+keywords = ["queue", "file", "fifo", "jsonl", "streaming"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries"
+]
+
+[tool.setuptools]
+py-modules = ["pistributer", "pistributer_txt", "pistributer_sqlite"]
