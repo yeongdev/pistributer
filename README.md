@@ -1,4 +1,4 @@
-# pistributer
+# Pistributer
 
 `pistributer` is a local-first FIFO queue toolkit for file-based workflows.
 
