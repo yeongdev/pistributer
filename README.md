@@ -2,6 +2,77 @@
 
 `pistributer` is a local-first FIFO queue toolkit for file-based workflows.
 
+If you want a queue you can install with `pip` and use immediately on local files, this project is for you.
+
+It helps you:
+
+- write messages into a file-backed queue
+- read those messages back in FIFO order
+- avoid standing up Redis, Kafka, or another separate service for small and medium local workflows
+
+For most new users, the default `jsonl` driver is the right place to start.
+
+## Start here if you are new
+
+If you only want the shortest possible path from zero to working code, do this:
+
+### 1. Install Python
+
+Make sure you have Python `3.9+`:
+
+```bash
+python3 --version
+```
+
+If that prints a version, you are ready.
+
+### 2. Install `pistributer`
+
+```bash
+python3 -m pip install pistributer
+```
+
+If `pip` says the package is already installed, that is fine.
+
+### 3. Create a test script
+
+Create a file named `demo.py` with this content:
+
+```python
+from pathlib import Path
+
+from pistributer import Pistributer
+
+queue_dir = Path("queues")
+queue_dir.mkdir(parents=True, exist_ok=True)
+
+queue_file = queue_dir / "demo.jsonl"
+
+Pistributer.put(queue_file, {"message": "hello"})
+Pistributer.put(queue_file, {"message": "world"})
+
+queue = Pistributer(queue_file)
+
+print(queue.next())
+print(queue.next())
+print(queue.isEmpty())
+```
+
+### 4. Run it
+
+```bash
+python3 demo.py
+```
+
+You should see two queue messages printed, then `True` after the queue becomes empty.
+
+That is the basic workflow:
+
+1. create a folder for your queue files
+2. write messages with `put()`
+3. open the queue with `Pistributer(...)`
+4. read messages with `next()`
+
 **Hard position:** `pistributer` exists for developers who want a usable queue across servers or local jobs without standing up Redis, Kafka, or another heavy service.
 
 **Performance contract:** this project prefers faster write/read throughput over a larger or more polished interface. The core value is still the same: write, read, high concurrency, multi-file workloads, and as little extra overhead as possible.
@@ -11,6 +82,20 @@ It started as a high-throughput local queue used on large datasets, and it now s
 - `txt` for the shortest raw file path
 - `jsonl` for structured, inspectable records
 - `sqlite` for stronger integrity under contention
+
+## Which import should I use?
+
+Start with this unless you already know you want something else:
+
+```python
+from pistributer import Pistributer
+```
+
+Use this quick rule:
+
+- use `Pistributer` when you want the normal default experience
+- use `PistributerTxt` when you want the raw plain-text path
+- use `PistributerSqlite` when correctness under contention matters more than raw append speed
 
 ## When to use each driver
 
@@ -117,6 +202,148 @@ For hot-path performance, `put()` in the two file drivers assumes the parent dir
 
 The intent is not to keep adding more actions and more surface area. The intent is to keep the important path small: write, read, and move a lot of data without unnecessary slowdown.
 
+## Install
+
+For most users, this is the correct install command:
+
+```bash
+python3 -m pip install pistributer
+```
+
+If you want to upgrade later:
+
+```bash
+python3 -m pip install --upgrade pistributer
+```
+
+To confirm the package is installed:
+
+```bash
+python3 - <<'PY'
+import pistributer
+print(pistributer.__version__)
+PY
+```
+
+If your system uses `python` instead of `python3`, you can use that instead.
+
+## First 5 minutes
+
+This section is intentionally written for beginners.
+
+### Step 1: make a folder for queue files
+
+```python
+from pathlib import Path
+
+queue_dir = Path("queues")
+queue_dir.mkdir(parents=True, exist_ok=True)
+```
+
+This matters because the file drivers do **not** create parent folders automatically.
+
+### Step 2: write messages into the queue
+
+```python
+from pistributer import Pistributer
+
+Pistributer.put("queues/tasks.jsonl", {"task": "download", "id": 1})
+Pistributer.put("queues/tasks.jsonl", {"task": "process", "id": 2})
+```
+
+### Step 3: read messages back out
+
+```python
+from pistributer import Pistributer
+
+queue = Pistributer("queues/tasks.jsonl")
+
+print(queue.next())
+print(queue.next())
+print(queue.isEmpty())
+```
+
+### Step 4: use one complete example
+
+```python
+from pathlib import Path
+
+from pistributer import Pistributer
+
+Path("queues").mkdir(parents=True, exist_ok=True)
+
+Pistributer.put("queues/tasks.jsonl", {"task": "download", "id": 1})
+Pistributer.put("queues/tasks.jsonl", {"task": "process", "id": 2})
+
+queue = Pistributer("queues/tasks.jsonl")
+
+while not queue.isEmpty():
+    print(queue.next())
+```
+
+## Beginner-friendly usage patterns
+
+### Use case: one script writes, another script reads
+
+Writer:
+
+```python
+from pathlib import Path
+
+from pistributer import Pistributer
+
+Path("queues").mkdir(parents=True, exist_ok=True)
+
+for index in range(5):
+    Pistributer.put("queues/jobs.jsonl", {"job_id": index, "status": "queued"})
+```
+
+Reader:
+
+```python
+from pistributer import Pistributer
+
+queue = Pistributer("queues/jobs.jsonl")
+
+while not queue.isEmpty():
+    item = queue.next()
+    print(item)
+```
+
+### Use case: plain text instead of JSON
+
+```python
+from pathlib import Path
+
+from pistributer_txt import PistributerTxt
+
+Path("queues").mkdir(parents=True, exist_ok=True)
+
+PistributerTxt.put("queues/logs.txt", "hello")
+PistributerTxt.put("queues/logs.txt", "world")
+
+queue = PistributerTxt("queues/logs.txt")
+
+while not queue.isEmpty():
+    print(queue.next())
+```
+
+### Use case: stronger local correctness with SQLite
+
+```python
+from pistributer_sqlite import PistributerSqlite
+
+queue = PistributerSqlite("queues/tasks.db")
+queue.put("hello")
+queue.put("world")
+
+print(queue.next())
+print(queue.next())
+print(queue.is_empty())
+
+queue.close()
+```
+
 ## Driver modes
 
 ### `jsonl` driver
@@ -166,12 +393,6 @@ Public API names stay stable on purpose.
 
 The naming is not perfectly uniform, but the project keeps the existing public contract instead of breaking working code.
 
-## Install
-
-```bash
-pip install pistributer
-```
-
 ## Quick start
 
 ```python
@@ -186,6 +407,76 @@ print(queue.next())
 print(queue.next())
 print(queue.isEmpty())
 ```
+
+## Common beginner mistakes
+
+### Mistake 1: writing to a folder that does not exist
+
+This fails:
+
+```python
+from pistributer import Pistributer
+
+Pistributer.put("missing/tasks.jsonl", {"task": "hello"})
+```
+
+Create the folder first:
+
+```python
+from pathlib import Path
+
+Path("missing").mkdir(parents=True, exist_ok=True)
+```
+
+### Mistake 2: using the wrong file extension
+
+- `Pistributer` expects `.jsonl`
+- `PistributerTxt` expects `.txt`
+- `PistributerSqlite` expects `.db`
+
+Examples:
+
+```python
+from pistributer import Pistributer
+from pistributer_txt import PistributerTxt
+from pistributer_sqlite import PistributerSqlite
+
+jsonl_queue = Pistributer("queues/tasks.jsonl")
+txt_queue = PistributerTxt("queues/tasks.txt")
+sqlite_queue = PistributerSqlite("queues/tasks.db")
+```
+
+### Mistake 3: assuming this is a distributed queue service
+
+`pistributer` is best for local, file-based workflows. It is not trying to replace a multi-node broker.
+
+### Mistake 4: choosing the wrong driver
+
+If you are unsure, use the default `jsonl` driver first:
+
+```python
+from pistributer import Pistributer
+```
+
+Switch to `txt` only when you specifically want a raw plain-text file path.
+Switch to `sqlite` when you specifically need stronger correctness under overlapping access.
+
+## Help and discovery
+
+You can inspect the built-in Python help:
+
+```python
+from pistributer import Pistributer
+
+help(Pistributer)
+help(Pistributer.put)
+```
+
+For more examples:
+
+- see `EXAMPLES.md`
+- see `DRIVERS.md`
+- see `BENCHMARKS.md`
 
 ## Core API
 
