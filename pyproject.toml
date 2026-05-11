@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pistributer"
+version = "0.2.0"
+description = "A high-throughput file-backed FIFO queue for newline-delimited JSON messages."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Yeong" }
+]
+keywords = ["queue", "file", "fifo", "jsonl", "streaming"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries"
+]
+
+[tool.setuptools]
+py-modules = ["pistributer", "pistributer_txt", "pistributer_sqlite"]
